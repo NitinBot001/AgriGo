@@ -1,12 +1,13 @@
 {
  "version": 2,
+ "functions": {
+    "app.py":
+    {
+      "runtime": "python@3.9"
+    }
+  },
  "builds": [
    {
-    "runtime": {
-
-    "python": "3.9"  
-
-  },
   "src": "./AgriGo/app.py",
   "use": "@vercel/python"
    }
