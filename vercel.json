@@ -1,7 +1,6 @@
 {
  "version": 2,
  "functions": [
-    "app.py":
     {
       "runtime": "python@3.9"
     }
