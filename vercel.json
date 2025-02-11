@@ -3,7 +3,7 @@
     { "src": "*.py", "use": "@vercel/python" }
   ],
   "redirects": [
-    { "source": "/", "destination": "/my_app.py" }
+    { "source": "/", "destination": "/AgriGo/app.py" }
   ]  
 
 
