@@ -1,10 +1,15 @@
 {
-"builds": [
-    { "src": "*.py", "use": "@vercel/python" }
-  ],
-  "redirects": [
-    { "source": "/", "destination": "/AgriGo/app.py" }
-  ]  
-
-
+ "version": 2,
+ "builds": [
+   {
+  "src": "./AgriGo/app.py",
+  "use": "@vercel/python"
+   }
+ ],
+ "routes": [
+   {
+  "src": "/(.*)",
+  "dest": "/AgriGo/app.py"
+   }
+ ]
 }
