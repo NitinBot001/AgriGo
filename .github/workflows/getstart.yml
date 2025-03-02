@@ -1,4 +1,4 @@
-name: Auto Deploy with nport
+name: Auto Deploy with Pinggy
 
 on:
   schedule:
@@ -22,19 +22,17 @@ jobs:
           docker run -d -p 5000:5000 --name myapp_container myapp
           sleep 10  # Wait for the app to start
 
-      - name: Install Node.js and nport
+      - name: Start Pinggy Tunnel
         run: |
-          curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
-          sudo apt-get install -y nodejs
-          npm install -g nport
+          # Start Pinggy tunnel and capture the output
+          nohup ssh -p 443 -R0:localhost:5000 -o StrictHostKeyChecking=no \
+            -o ServerAliveInterval=30 -t vzrUptnpbIY@a.pinggy.io x:https > pinggy_output.txt 2>&1 &
 
-      - name: Generate Random Subdomain and Start nport Tunnel
-        run: |
-          # Generate a 10-character random alphanumeric string for the subdomain
-          SUBDOMAIN=$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 10 | head -n 1)
+          # Wait for tunnel to establish
+          sleep 10
 
-          # Start nport tunnel and extract the URL
-          TUNNEL_URL=$(nport -s $SUBDOMAIN -p 5000 | grep -o 'https://[^ ]*')
+          # Extract tunnel URL from output
+          TUNNEL_URL=$(grep -o 'https://[^ ]*' pinggy_output.txt | head -n 1)
 
           echo "Generated Tunnel URL: $TUNNEL_URL"
 
