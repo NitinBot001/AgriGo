@@ -12,6 +12,7 @@ on:
 jobs:
   deploy:
     runs-on: ubuntu-latest
+    timeout-minutes: 360  # Maximum 6 hours
 
     steps:
       - name: Checkout Repository
@@ -42,3 +43,8 @@ jobs:
         run: |
           sleep 5
           curl -s http://localhost:4040/api/tunnels | jq -r '.tunnels[0].public_url'
+
+      - name: Keep Job Alive
+        run: |
+          echo "Keeping job alive for 6 hours..."
+          while true; do sleep 300; echo "Still running..."; done
