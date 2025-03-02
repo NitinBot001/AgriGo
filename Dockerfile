@@ -10,7 +10,13 @@ COPY . /app
 # Install any needed packages specified in requirements.txt
 RUN pip install --no-cache-dir -r requirements.txt
 
-# Make port 5000 available to the world outside this container
+# Install Node.js and nport
+RUN apt update && apt install -y curl && \
+    curl -fsSL https://deb.nodesource.com/setup_18.x | bash - && \
+    apt install -y nodejs && \
+    npm install -g nport
+
+# Expose port 5000
 EXPOSE 5000
 
 # Define environment variable for Flask
