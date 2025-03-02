@@ -1,55 +1,50 @@
-name: GetUp Action
+name: Auto Deploy with nport
 
 on:
-  push:
-    branches:
-      - main
-  pull_request:
-    branches:
-      - main
-  workflow_dispatch:
+  schedule:
+    - cron: "0 */6 * * *"  # हर 6 घंटे पर रन होगा
+  workflow_dispatch:  # मैन्युअली भी ट्रिगर किया जा सकता है
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
-    timeout-minutes: 60  # Set to 1 hour (max for Pinggy free server)
 
     steps:
-      - name: Checkout Repository
+      - name: रेपो को क्लोन करें
         uses: actions/checkout@v4
 
-      - name: Set up Docker Buildx
-        uses: docker/setup-buildx-action@v3
-
-      - name: Build and Run Docker Container
+      - name: Docker बिल्ड करें
         run: |
-          docker build -t agrigo-app .
-          docker run -d -p 5000:5000 --name running-app agrigo-app
+          docker build -t myapp .
 
-      - name: Install Pinggy (SSH Client)
+      - name: Docker कंटेनर रन करें
         run: |
-          sudo apt update && sudo apt install -y openssh-client
+          docker run -d -p 5000:5000 --name myapp_container myapp
+          sleep 10  # कुछ सेकंड वेट करें ताकि ऐप स्टार्ट हो जाए
 
-      - name: Start and Restart Pinggy Tunnel
-        env:
-          PINGGY_ACCESS_TOKEN: ${{ secrets.PINGGY_ACCESS_TOKEN }}
+      - name: Node.js और nport इंस्टॉल करें
         run: |
-          start_pinggy() {
-            echo "Starting Pinggy tunnel..."
-            nohup ssh -p 443 -R0:localhost:5000 -L4300:localhost:4300 \
-              -o StrictHostKeyChecking=no -o ServerAliveInterval=30 \
-              -t "$PINGGY_ACCESS_TOKEN"@a.pinggy.io x:https > pinggy.log 2>&1 &
-            sleep 5
-            echo "Pinggy tunnel started successfully."
-          }
+          curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
+          sudo apt-get install -y nodejs
+          npm install -g nport
 
-          # Start Pinggy first time
-          start_pinggy
+      - name: कस्टम सबडोमेन जेनरेट करें और टनल स्टार्ट करें
+        run: |
+          # 10-अक्षरों की रैंडम अल्फ़ान्यूमेरिक स्ट्रिंग बनाएं
+          SUBDOMAIN=$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 10 | head -n 1)
 
-          # Restart Pinggy before 1-hour limit (every 55 minutes)
-          sleep 3300  # 55 minutes
-          echo "Restarting Pinggy tunnel..."
-          pkill ssh  # Kill existing Pinggy SSH session
-          start_pinggy
+          # टनलिंग शुरू करें और URL प्राप्त करें
+          TUNNEL_URL=$(nport -s $SUBDOMAIN -p 5000 | grep -o 'https://[^ ]*')
 
-          echo "GitHub Actions job completed after 1 hour."
+          echo "Generated Tunnel URL: $TUNNEL_URL"
+
+          # instance.json में टनल URL सेव करें
+          echo "{ \"tunnel_url\": \"$TUNNEL_URL\" }" > instance.json
+
+      - name: Updated tunnel URL को कमिट करें
+        run: |
+          git config --global user.email "github-actions@github.com"
+          git config --global user.name "GitHub Actions"
+          git add instance.json
+          git commit -m "Updated tunnel URL"
+          git push
