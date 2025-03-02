@@ -2,46 +2,46 @@ name: Auto Deploy with nport
 
 on:
   schedule:
-    - cron: "0 */6 * * *"  # हर 6 घंटे पर रन होगा
-  workflow_dispatch:  # मैन्युअली भी ट्रिगर किया जा सकता है
+    - cron: "0 */6 * * *"  # Runs every 6 hours
+  workflow_dispatch:  # Allows manual trigger
 
 jobs:
   deploy:
     runs-on: ubuntu-latest
 
     steps:
-      - name: रेपो को क्लोन करें
+      - name: Clone repository
         uses: actions/checkout@v4
 
-      - name: Docker बिल्ड करें
+      - name: Build Docker image
         run: |
           docker build -t myapp .
 
-      - name: Docker कंटेनर रन करें
+      - name: Run Docker container
         run: |
           docker run -d -p 5000:5000 --name myapp_container myapp
-          sleep 10  # कुछ सेकंड वेट करें ताकि ऐप स्टार्ट हो जाए
+          sleep 10  # Wait for the app to start
 
-      - name: Node.js और nport इंस्टॉल करें
+      - name: Install Node.js and nport
         run: |
           curl -fsSL https://deb.nodesource.com/setup_18.x | sudo -E bash -
           sudo apt-get install -y nodejs
           npm install -g nport
 
-      - name: कस्टम सबडोमेन जेनरेट करें और टनल स्टार्ट करें
+      - name: Generate Random Subdomain and Start nport Tunnel
         run: |
-          # 10-अक्षरों की रैंडम अल्फ़ान्यूमेरिक स्ट्रिंग बनाएं
+          # Generate a 10-character random alphanumeric string for the subdomain
           SUBDOMAIN=$(cat /dev/urandom | tr -dc 'a-z0-9' | fold -w 10 | head -n 1)
 
-          # टनलिंग शुरू करें और URL प्राप्त करें
+          # Start nport tunnel and extract the URL
           TUNNEL_URL=$(nport -s $SUBDOMAIN -p 5000 | grep -o 'https://[^ ]*')
 
           echo "Generated Tunnel URL: $TUNNEL_URL"
 
-          # instance.json में टनल URL सेव करें
+          # Save the tunnel URL to instance.json
           echo "{ \"tunnel_url\": \"$TUNNEL_URL\" }" > instance.json
 
-      - name: Updated tunnel URL को कमिट करें
+      - name: Commit Updated Tunnel URL
         run: |
           git config --global user.email "github-actions@github.com"
           git config --global user.name "GitHub Actions"
