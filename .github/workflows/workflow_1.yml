@@ -1,0 +1,66 @@
+name: Persistent NPort Tunnel - Workflow 1
+
+on:
+  workflow_dispatch:  # मैन्युअल रूप से स्टार्ट किया जा सकता है
+
+jobs:
+  deploy:
+    runs-on: ubuntu-latest
+    timeout-minutes: 355  # यह 6 घंटे तक चलेगा
+
+    steps:
+      - name: Clone repository
+        uses: actions/checkout@v4
+
+      - name: Build and Run Docker Container
+        run: |
+          docker build -t myapp .
+          docker run -d -p 5000:5000 --name myapp_container myapp
+          sleep 10
+
+      - name: Install Dependencies
+        run: |
+          sudo apt update && sudo apt install -y openssh-client jq curl
+
+      - name: Generate Random Subdomain
+        run: |
+          SUBDOMAIN=$(openssl rand -hex 4)
+          echo "SUBDOMAIN=$SUBDOMAIN" >> $GITHUB_ENV
+
+      - name: Start NPort Tunnel and Save URL
+        run: |
+          echo "Starting NPort Tunnel with subdomain: $SUBDOMAIN"
+          nohup npx nport -s $SUBDOMAIN -p 5000 > nport_output.txt 2>&1 &
+
+          sleep 15
+
+          # टनल URL सेट करें
+          TUNNEL_URL="https://$SUBDOMAIN.nport.link"
+          echo "Generated Tunnel URL: $TUNNEL_URL"
+
+          # URL को `instance.json` में सेव करें
+          echo "{ \"tunnel_url\": \"$TUNNEL_URL\" }" > instance.json
+
+      - name: Commit and Push Tunnel URL
+        run: |
+          git diff --quiet && echo "No changes to commit" || (
+            git config --global user.email "github-actions@github.com"
+            git config --global user.name "GitHub Actions"
+            git add instance.json
+            git commit -m "Updated tunnel URL"
+            git push
+          )
+
+      - name: Trigger Workflow 2 After 5 Hours 40 Minutes
+        run: |
+          echo "Waiting for 5 hours 40 minutes before triggering workflow_2..."
+          sleep 20400  # 5 घंटे 40 मिनट (5.67 × 60 × 60 सेकंड)
+          
+          echo "Triggering workflow_2 now..."
+          curl -X POST -H "Authorization: token ${{ secrets.GITHUB_TOKEN }}" \
+            -H "Accept: application/vnd.github.v3+json" \
+            https://api.github.com/repos/${{ github.repository }}/actions/workflows/workflow_2.yml/dispatches \
+            -d '{"ref": "main"}'
+
+      - name: Keep Workflow Running for 6 Hours
+        run: tail -f /dev/null  # इसे 6 घंटे तक चालू रखेगा
