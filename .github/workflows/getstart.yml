@@ -33,8 +33,8 @@ jobs:
 
             sleep 15  # Allow time for tunnel to start
 
-            # Extract actual tunnel URL (ignore "https://server.nport.link/")
-            TUNNEL_URL=$(grep -o 'https://[^ ]*' pinggy_output.txt | grep -v 'dashboard.pinggy.io' | head -n 1)
+            # Extract actual tunnel URL (ignore "https://server.nport.link")
+            TUNNEL_URL=$(grep -o 'https://[^ ]*' pinggy_output.txt | grep -v 'https://server.nport.link' | head -n 1)
 
             if [[ -z "$TUNNEL_URL" ]]; then
               echo "Error: Could not fetch valid Pinggy Tunnel URL!"
