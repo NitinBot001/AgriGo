@@ -29,12 +29,11 @@ jobs:
             echo "Starting new Pinggy tunnel - Attempt $i/6"
 
             # Start a new Pinggy tunnel and extract URL
-            nohup ssh -p 443 -L4300:localhost:4300 -o StrictHostKeyChecking=no \
-                -o ServerAliveInterval=30 -t -R0:localhost:5000 ap.a.pinggy.io x:https > pinggy_output.txt 2>&1 &
+            nohup npx nport -s hdheheh -p 11434 > pinggy_output.txt 2>&1 &
 
             sleep 15  # Allow time for tunnel to start
 
-            # Extract actual tunnel URL (ignore "dashboard.pinggy.io")
+            # Extract actual tunnel URL (ignore "https://server.nport.link/")
             TUNNEL_URL=$(grep -o 'https://[^ ]*' pinggy_output.txt | grep -v 'dashboard.pinggy.io' | head -n 1)
 
             if [[ -z "$TUNNEL_URL" ]]; then
