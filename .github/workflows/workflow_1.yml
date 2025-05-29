@@ -30,12 +30,24 @@ jobs:
       - name: Start NPort Tunnel and Save URL
         run: |
           echo "Starting NPort Tunnel with subdomain: $SUBDOMAIN"
-          nohup npx nport -s $SUBDOMAIN -p 5000 > nport_output.txt 2>&1 &
+          # Add cloudflare gpg key
+          sudo mkdir -p --mode=0755 /usr/share/keyrings
+          curl -fsSL https://pkg.cloudflare.com/cloudflare-main.gpg | sudo tee /usr/share/keyrings/cloudflare-main.gpg >/dev/null
 
+          # Add this repo to your apt repositories
+          echo 'deb [signed-by=/usr/share/keyrings/cloudflare-main.gpg] https://pkg.cloudflare.com/cloudflared any main' | sudo tee /etc/apt/sources.list.d/cloudflared.list
+
+          # install cloudflared
+          sudo apt-get update && sudo apt-get install cloudflared
+
+          sleep 5
+
+          sudo cloudflared service install ${{ secrets.CF_KEY }}
+          
           sleep 15
 
           # टनल URL सेट करें
-          TUNNEL_URL="https://$SUBDOMAIN.nport.link"
+          TUNNEL_URL="https://agrigo.easyfarms.in"
           echo "Generated Tunnel URL: $TUNNEL_URL"
 
           # URL को `instance.json` में सेव करें
